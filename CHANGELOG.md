@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.3 — 2026-08-31
+
+- Letter grades removed from the window, HTML and Markdown — the headline is
+  now the score plus the total recoverable estimate. The grade field stays in
+  the JSON for CI gates.
+- HTML charts label rows with the last two path segments (readable names);
+  the full path moved into the hover tooltip. Wider label column.
+
 ## 1.0.2 — 2026-08-31
 
 - Export HTML: one-page visual report (category score bars, top recoverable

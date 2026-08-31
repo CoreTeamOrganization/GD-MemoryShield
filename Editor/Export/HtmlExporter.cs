@@ -69,7 +69,7 @@ namespace GameDistrict.MemoryShield.Export
 ".tile .l{font-size:11px;color:" + Gray + "}" +
 ".chart{margin-top:10px}" +
 ".row{display:flex;align-items:center;gap:10px;margin:6px 0}" +
-".row .name{width:200px;flex-shrink:0;font-size:12px;color:" + Ink + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}" +
+".row .name{width:270px;flex-shrink:0;font-size:12px;color:" + Ink + ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}" +
 ".row .track{flex:1;background:rgba(0,0,0,.05);border-radius:4px;height:16px;position:relative}" +
 ".row .bar{height:16px;border-radius:4px;min-width:2px}" +
 ".row .val{width:90px;flex-shrink:0;font-size:12px;font-weight:600;color:" + Navy + "}" +
@@ -91,11 +91,13 @@ namespace GameDistrict.MemoryShield.Export
             sb.Append("<div class=\"sub\">Unity ").Append(E(r.unityVersion))
               .Append(" · scanned ").Append(E(r.scanDateUtc)).Append("</div>");
             sb.Append("<div class=\"verdict\">").Append(E(r.verdict)).Append("</div>");
+            long recoverable = r.AllFindings().Sum(f => f.estimatedBytes);
             sb.Append("</div><div style=\"text-align:center\">");
-            sb.Append("<div class=\"eyebrow\">Grade</div>");
-            sb.Append("<div class=\"grade\" style=\"color:").Append(GradeColor(r.grade)).Append("\">")
-              .Append(E(r.grade)).Append("</div>");
-            sb.Append("<div class=\"sub\">").Append(((int)r.score)).Append(" / 100</div>");
+            sb.Append("<div class=\"eyebrow\">Score</div>");
+            sb.Append("<div class=\"grade\" style=\"color:").Append(ScoreColor(r.score)).Append("\">")
+              .Append((int)r.score).Append("</div>");
+            sb.Append("<div class=\"sub\">of 100 · ~").Append(TextureAnalyzer.Fmt(recoverable))
+              .Append(" recoverable</div>");
             sb.Append("</div></div>");
         }
 
@@ -107,7 +109,6 @@ namespace GameDistrict.MemoryShield.Export
             long recoverable = all.Sum(f => f.estimatedBytes);
 
             sb.Append("<div class=\"tiles\">");
-            Tile(sb, ((int)r.score) + " / 100", "score");
             Tile(sb, TextureAnalyzer.Fmt(r.estimatedTotalBytes),
                 "est. asset footprint (" + E(r.budgetTier) + " tier ceiling " + TextureAnalyzer.Fmt(r.budgetCeilingBytes) + ")");
             Tile(sb, high + " high · " + med + " medium", "finding instances");
@@ -146,8 +147,9 @@ namespace GameDistrict.MemoryShield.Export
             sb.Append("<h2>Biggest recoverable estimates</h2><div class=\"sub\">top 10 findings by estimated MB — fix these first</div><div class=\"chart\">");
             foreach (var f in top)
             {
-                string name = f.id + " · " + Trail(f.path, 34);
-                Bar(sb, name, f.estimatedBytes, max, Navy, "~" + TextureAnalyzer.Fmt(f.estimatedBytes), f.message);
+                string name = f.id + " · " + ShortName(f.path);
+                Bar(sb, name, f.estimatedBytes, max, Navy, "~" + TextureAnalyzer.Fmt(f.estimatedBytes),
+                    f.path + " — " + f.message);
             }
             sb.Append("</div><div class=\"note\">Estimates ignore atlas packing and streaming — treat as ranking, verify on device.</div>");
         }
@@ -160,9 +162,9 @@ namespace GameDistrict.MemoryShield.Export
 
             sb.Append("<h2>Heaviest scenes</h2><div class=\"sub\">estimated texture+audio resident when loaded</div><div class=\"chart\">");
             foreach (var s in top)
-                Bar(sb, Trail(s.path, 40), s.estResidentBytes, max, Navy,
+                Bar(sb, ShortName(s.path), s.estResidentBytes, max, Navy,
                     "~" + TextureAnalyzer.Fmt(s.estResidentBytes),
-                    s.assetRefCount + " asset refs, " + s.gameObjectCount + " GameObjects, " + s.disabledObjectCount + " disabled");
+                    s.path + " — " + s.assetRefCount + " asset refs, " + s.gameObjectCount + " GameObjects, " + s.disabledObjectCount + " disabled");
             sb.Append("</div>");
         }
 
@@ -239,15 +241,20 @@ namespace GameDistrict.MemoryShield.Export
             sb.Append("<div class=\"val\">").Append(E(label)).Append("</div></div>");
         }
 
-        private static string GradeColor(string grade)
+        private static string ScoreColor(float score)
         {
-            switch (grade)
-            {
-                case "A": return Green;
-                case "B": return Gold;
-                case "C": return Amber;
-                default: return Red;
-            }
+            if (score >= 85f) return Green;
+            if (score >= 55f) return Amber;
+            return Red;
+        }
+
+        // Last two path segments — "Manager/EnemyManager.cs" reads; a mid-string
+        // ellipsis doesn't. The full path lives in the row's tooltip.
+        private static string ShortName(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return "(project-wide)";
+            var parts = path.Replace('\\', '/').Split('/');
+            return parts.Length <= 2 ? path : parts[parts.Length - 2] + "/" + parts[parts.Length - 1];
         }
 
         private static string Trail(string path, int max)

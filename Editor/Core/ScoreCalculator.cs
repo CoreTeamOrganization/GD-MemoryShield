@@ -55,11 +55,14 @@ namespace GameDistrict.MemoryShield.Core
             report.score = Clamp01to100(total);
             string grade = GradeFor(report.score);
 
+            // Letter grades stay in the JSON (schema stability, CI gates) but are
+            // no longer shown to people — a red F demotivates; recoverable MB and a
+            // rising score motivate. The killer cap still bites the stored grade.
             string killer = KillerFor(report);
             if (killer != null && (grade == "A" || grade == "B"))
             {
                 grade = "C";
-                report.verdict = "Capped at C: " + killer;
+                report.verdict = "One issue needs attention before anything else: " + killer + ".";
             }
             report.grade = grade;
 

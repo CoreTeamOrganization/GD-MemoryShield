@@ -222,11 +222,13 @@ namespace GameDistrict.MemoryShield.Window
             spacerLeft.style.flexGrow = 1;
             header.Add(spacerLeft);
 
-            // grade block: big letter + score underneath
+            // score block: big number + recoverable estimate underneath. No letter
+            // grades anywhere people look — a red F demotivates; a number that can
+            // rise and a recoverable-MB figure give the team something to chase.
             var gradeBlock = new VisualElement();
             gradeBlock.style.alignItems = Align.Center;
             gradeBlock.style.marginRight = 28;
-            var gradeEyebrow = Eyebrow("Grade");
+            var gradeEyebrow = Eyebrow("Score");
             gradeBlock.Add(gradeEyebrow);
             _gradeLabel = new Label("—");
             _gradeLabel.style.fontSize = 34;
@@ -264,9 +266,10 @@ namespace GameDistrict.MemoryShield.Window
             _report = report;
             MemoryShieldTelemetry.Event("scan.done",
                 string.Format("grade={0} score={1:0} findings={2}", report.grade, report.score, report.AllFindings().Count));
-            _gradeLabel.text = report.grade;
-            _gradeLabel.style.color = GradeColor(report.grade);
-            _scoreLabel.text = report.score.ToString("0") + " / 100";
+            long recoverable = report.AllFindings().Sum(f => f.estimatedBytes);
+            _gradeLabel.text = report.score.ToString("0");
+            _gradeLabel.style.color = ScoreColor(report.score);
+            _scoreLabel.text = "of 100 · ~" + TextureAnalyzer.Fmt(recoverable) + " recoverable";
             _timestampLabel.text = "Scanned " + report.scanDateUtc.Replace("T", " ").Replace("Z", " UTC");
             if (_verdictLabel != null) _verdictLabel.text = report.verdict;
             _selectedCategory = report.categories.Count > 0 ? report.categories[0].category : null;
@@ -819,8 +822,10 @@ namespace GameDistrict.MemoryShield.Window
         {
             if (!EnsureReport()) return;
             EditorGUIUtility.systemCopyBuffer = string.Format(
-                "{0} — MemoryShield grade {1} ({2:0}/100). {3}",
-                _report.projectName, _report.grade, _report.score, _report.executiveSummary);
+                "{0} — MemoryShield score {1:0}/100, ~{2} recoverable. {3}",
+                _report.projectName, _report.score,
+                TextureAnalyzer.Fmt(_report.AllFindings().Sum(f => f.estimatedBytes)),
+                _report.executiveSummary);
             MemoryShieldTelemetry.Event("copy.summary");
             ShowNotification(new GUIContent("Summary copied"));
         }
@@ -872,15 +877,11 @@ namespace GameDistrict.MemoryShield.Window
             return new Color(c.r, c.g, c.b, 0.12f);
         }
 
-        private static Color GradeColor(string grade)
+        private static Color ScoreColor(float score)
         {
-            switch (grade)
-            {
-                case "A": return MSBrandTokens.Shipped;
-                case "B": return MSBrandTokens.Gold;
-                case "C": return MSBrandTokens.Amber;
-                default: return MSBrandTokens.Overdue;
-            }
+            if (score >= 85f) return MSBrandTokens.Shipped;
+            if (score >= 55f) return MSBrandTokens.Amber;
+            return MSBrandTokens.Overdue;
         }
     }
 }

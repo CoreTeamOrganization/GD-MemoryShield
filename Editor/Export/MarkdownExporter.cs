@@ -28,7 +28,7 @@ namespace GameDistrict.MemoryShield.Export
             sb.AppendLine();
             sb.AppendLine("| | |");
             sb.AppendLine("|---|---|");
-            sb.AppendLine("| Grade | **" + r.grade + "** (" + r.score.ToString("0") + "/100) |");
+            sb.AppendLine("| Score | **" + r.score.ToString("0") + " / 100** |");
             sb.AppendLine("| Unity | " + r.unityVersion + " |");
             sb.AppendLine("| Scanned | " + r.scanDateUtc + " |");
             sb.AppendLine("| Tool | MemoryShield " + r.toolVersion + " |");
