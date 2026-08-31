@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 — 2026-08-31
+
+- Export HTML: one-page visual report (category score bars, top recoverable
+  estimates, heaviest scenes, root map, atlas and texture tables) — a single
+  self-contained file for producers and IBO updates.
+- Grouped folder findings preview a 2x2 grid of the textures inside the folder
+  instead of a gray folder icon.
+
 ## 1.0.1 — 2026-08-31
 
 - Detail card shows an asset preview thumbnail (Project Auditor parity).

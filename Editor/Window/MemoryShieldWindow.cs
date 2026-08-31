@@ -580,19 +580,51 @@ namespace GameDistrict.MemoryShield.Window
             row.style.flexDirection = FlexDirection.Row;
             _detailPane.Add(row);
 
-            // asset preview thumbnail, when the finding points at a previewable asset
-            var target = string.IsNullOrEmpty(f.path) ? null : AssetDatabase.LoadMainAssetAtPath(f.path);
-            if (target != null)
+            // asset preview: real thumbnail for an asset; for a folder row (grouped
+            // findings) a 2x2 grid of the textures inside it beats a gray folder icon
+            if (!string.IsNullOrEmpty(f.path) && AssetDatabase.IsValidFolder(f.path))
             {
-                var img = new Image { scaleMode = ScaleMode.ScaleToFit };
-                img.style.width = 84;
-                img.style.height = 84;
-                img.style.flexShrink = 0;
-                img.style.marginRight = 14;
-                img.style.backgroundColor = new Color(0f, 0f, 0f, 0.05f);
-                Rounded(img, 4);
-                SetPreview(img, target);
-                row.Add(img);
+                var grid = new VisualElement();
+                grid.style.flexDirection = FlexDirection.Row;
+                grid.style.flexWrap = Wrap.Wrap;
+                grid.style.width = 88;
+                grid.style.flexShrink = 0;
+                grid.style.marginRight = 14;
+                var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { f.path });
+                int shown = 0;
+                foreach (var g in guids)
+                {
+                    if (shown >= 4) break;
+                    var tex = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(g));
+                    if (tex == null) continue;
+                    var cell = new Image { scaleMode = ScaleMode.ScaleToFit };
+                    cell.style.width = 40;
+                    cell.style.height = 40;
+                    cell.style.marginRight = shown % 2 == 0 ? 4 : 0;
+                    cell.style.marginBottom = 4;
+                    cell.style.backgroundColor = new Color(0f, 0f, 0f, 0.05f);
+                    Rounded(cell, 3);
+                    SetPreview(cell, tex);
+                    grid.Add(cell);
+                    shown++;
+                }
+                if (shown > 0) row.Add(grid);
+            }
+            else
+            {
+                var target = string.IsNullOrEmpty(f.path) ? null : AssetDatabase.LoadMainAssetAtPath(f.path);
+                if (target != null)
+                {
+                    var img = new Image { scaleMode = ScaleMode.ScaleToFit };
+                    img.style.width = 84;
+                    img.style.height = 84;
+                    img.style.flexShrink = 0;
+                    img.style.marginRight = 14;
+                    img.style.backgroundColor = new Color(0f, 0f, 0f, 0.05f);
+                    Rounded(img, 4);
+                    SetPreview(img, target);
+                    row.Add(img);
+                }
             }
 
             var content = new VisualElement();
@@ -729,6 +761,7 @@ namespace GameDistrict.MemoryShield.Window
             var exportBtn = MakeButton("Export Markdown", ExportMarkdown, primary: true);
             exportBtn.style.marginLeft = 0;
             footer.Add(exportBtn);
+            footer.Add(MakeButton("Export HTML", ExportHtml, primary: false));
             footer.Add(MakeButton("Export JSON", ExportJson, primary: false));
             footer.Add(MakeButton("Copy Summary", CopySummary, primary: false));
 
@@ -757,6 +790,17 @@ namespace GameDistrict.MemoryShield.Window
             if (string.IsNullOrEmpty(path)) return;
             File.WriteAllText(path, MarkdownExporter.Export(_report));
             MemoryShieldTelemetry.Event("export.md");
+            EditorUtility.RevealInFinder(path);
+        }
+
+        private void ExportHtml()
+        {
+            if (!EnsureReport()) return;
+            string path = EditorUtility.SaveFilePanel("Export MemoryShield HTML report",
+                "", SafeName() + "-memory-report.html", "html");
+            if (string.IsNullOrEmpty(path)) return;
+            File.WriteAllText(path, HtmlExporter.Export(_report));
+            MemoryShieldTelemetry.Event("export.html");
             EditorUtility.RevealInFinder(path);
         }
 
