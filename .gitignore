@@ -1,1 +1,7 @@
 .DS_Store
+Development~/TestProject~/Library/
+Development~/TestProject~/Logs/
+Development~/TestProject~/UserSettings/
+Development~/TestProject~/Temp/
+Development~/TestProject~/Packages/packages-lock.json
+check.log
