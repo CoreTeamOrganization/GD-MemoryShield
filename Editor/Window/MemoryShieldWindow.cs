@@ -576,20 +576,45 @@ namespace GameDistrict.MemoryShield.Window
             }
             _detailPane.style.display = DisplayStyle.Flex;
 
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            _detailPane.Add(row);
+
+            // asset preview thumbnail, when the finding points at a previewable asset
+            var target = string.IsNullOrEmpty(f.path) ? null : AssetDatabase.LoadMainAssetAtPath(f.path);
+            if (target != null)
+            {
+                var img = new Image { scaleMode = ScaleMode.ScaleToFit };
+                img.style.width = 84;
+                img.style.height = 84;
+                img.style.flexShrink = 0;
+                img.style.marginRight = 14;
+                img.style.backgroundColor = new Color(0f, 0f, 0f, 0.05f);
+                Rounded(img, 4);
+                SetPreview(img, target);
+                row.Add(img);
+            }
+
+            var content = new VisualElement();
+            content.style.flexGrow = 1;
+            content.style.flexShrink = 1;
+            row.Add(content);
+
             var headline = new Label(f.severityLabel + "  ·  " + f.id
+                + (f.instances > 1 ? "  ·  " + f.instances + " instances" : "")
                 + (f.estimatedBytes > 0 ? "  ·  ~" + TextureAnalyzer.Fmt(f.estimatedBytes) + " recoverable" : ""));
             headline.style.fontSize = 10;
             headline.style.letterSpacing = 1f;
             headline.style.unityFontStyleAndWeight = FontStyle.Bold;
             headline.style.color = SevColor(f.Sev);
             headline.style.marginBottom = 6;
-            _detailPane.Add(headline);
+            content.Add(headline);
 
             var msg = new Label(f.message);
             msg.style.whiteSpace = WhiteSpace.Normal;
             msg.style.color = MSBrandTokens.Ink;
             msg.style.fontSize = 12;
-            _detailPane.Add(msg);
+            content.Add(msg);
 
             if (!string.IsNullOrEmpty(f.fix))
             {
@@ -598,7 +623,7 @@ namespace GameDistrict.MemoryShield.Window
                 fix.style.color = MSBrandTokens.WarmGray;
                 fix.style.fontSize = 12;
                 fix.style.marginTop = 4;
-                _detailPane.Add(fix);
+                content.Add(fix);
             }
 
             if (!string.IsNullOrEmpty(f.path))
@@ -615,8 +640,26 @@ namespace GameDistrict.MemoryShield.Window
                 }, primary: false);
                 ping.style.marginLeft = 0;
                 actions.Add(ping);
-                _detailPane.Add(actions);
+                content.Add(actions);
             }
+        }
+
+        // AssetPreview renders asynchronously — show the mini thumbnail immediately
+        // and poll briefly for the real preview.
+        private static void SetPreview(Image img, UnityEngine.Object target)
+        {
+            var tex = AssetPreview.GetAssetPreview(target);
+            if (tex != null)
+            {
+                img.image = tex;
+                return;
+            }
+            img.image = AssetPreview.GetMiniThumbnail(target);
+            img.schedule.Execute(() =>
+            {
+                var t = AssetPreview.GetAssetPreview(target);
+                if (t != null) img.image = t;
+            }).Every(200).ForDuration(4000);
         }
 
         private void RefreshFindings()
@@ -631,11 +674,12 @@ namespace GameDistrict.MemoryShield.Window
                         .Where(f => _severityFilter.Contains(f.Sev) || f.Sev == Severity.Blocker)
                         .Where(f => string.IsNullOrEmpty(_search)
                             || (f.path != null && f.path.ToLowerInvariant().Contains(_search.ToLowerInvariant())))
-                        .OrderBy(f => f.severity)
+                        .OrderBy(f => OwnRank(f.path))
+                        .ThenBy(f => f.severity)
                         .ThenByDescending(f => f.estimatedBytes)
                         .ToList();
                     _statusLabel.text = cat.State == CategoryState.Complete
-                        ? _visible.Count + " of " + cat.findings.Count + " findings shown, worst first"
+                        ? _visible.Count + " of " + cat.findings.Count + " findings shown — your own code and assets first, worst first"
                         : cat.stateNote;
                 }
             }
@@ -653,6 +697,22 @@ namespace GameDistrict.MemoryShield.Window
                 _findingsList.Refresh();
 #endif
             }
+        }
+
+        // Own work ranks above bought/third-party content: a singleton in the
+        // team's own Assets folders is fixable today; one inside an imported SDK
+        // or store pack is a vendor conversation. 0 = own, 1 = third-party.
+        private static int OwnRank(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return 0;              // project-wide
+            if (!path.StartsWith("Assets/")) return 1;             // Packages/, Library/
+            string low = path.ToLowerInvariant();
+            if (low.Contains("/plugins/") || low.Contains("/thirdparty/")
+                || low.Contains("/third party/") || low.Contains("/standard assets/")
+                || low.Contains("/external/") || low.Contains("/sdk/") || low.Contains("/sdks/")
+                || low.StartsWith("assets/plugins") || low.StartsWith("assets/thirdparty"))
+                return 1;
+            return 0;
         }
 
         // ── footer ────────────────────────────────────────────────────────────

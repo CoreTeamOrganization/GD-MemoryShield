@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 — 2026-08-31
+
+- Detail card shows an asset preview thumbnail (Project Auditor parity).
+- Findings list ranks your own code and assets above third-party content
+  (Assets/Plugins, ThirdParty, SDK and store folders sort below).
+- Detail card headline shows the instance count on grouped rows.
+- Category pills read as scores ("62/100"), not bare numbers.
+
 ## 1.0.0 — 2026-08-31
 
 Initial release.
