@@ -1,0 +1,15 @@
+/* Selection/hover styling for the findings ListView. The default editor
+   selection color is dark navy, which makes our ink-colored labels unreadable —
+   a gold tint keeps the text legible in both editor skins. */
+
+.unity-collection-view__item--selected {
+    background-color: rgba(244, 196, 48, 0.35);
+}
+
+.unity-collection-view__item--selected:hover {
+    background-color: rgba(244, 196, 48, 0.45);
+}
+
+.unity-collection-view__item:hover {
+    background-color: rgba(244, 196, 48, 0.12);
+}

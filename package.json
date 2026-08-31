@@ -1,0 +1,22 @@
+{
+  "name": "com.gamedistrict.memoryshield",
+  "version": "1.0.0",
+  "displayName": "GD MemoryShield",
+  "description": "Static memory audit for Unity projects. Scans assets, scenes and code and reports what will cost memory at runtime: heavy and misconfigured textures, atlas padding waste, audio import mistakes, scene bloat, and code patterns that keep assets alive past their scene. Pure project-side analysis — never runs the game, never talks to Play.\n\nOpen via Tools > GD MemoryShield.",
+  "unity": "2021.3",
+  "unityRelease": "0f1",
+  "author": {
+    "name": "Game District",
+    "email": "hello@gamedistrict.co",
+    "url": "https://gamedistrict.co"
+  },
+  "keywords": [
+    "memory",
+    "audit",
+    "textures",
+    "sprite-atlas",
+    "static-analysis",
+    "editor-tool"
+  ],
+  "category": "Editor"
+}
